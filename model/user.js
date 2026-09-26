@@ -754,7 +754,20 @@ export default class user {
             }
         }
         if (!uid) {
-            uid = e.runtime?.user?._regUid
+            // JiuLi 运行时没有 _regUid，uid 需从 runtime.user.getUid(game) 获取
+            // 注意：adapter 等场景会传入精简的伪 e（无 user_id），此时不做运行时初始化
+            if (e?.user_id || e?.runtime) {
+                try {
+                    const rt = e.runtime ?? (await import('../../../lib/core/runtime.js')).default.attach(e)
+                    await rt.ready() // 确保 e.user 已初始化
+                    uid = rt.user?.getUid?.(e.game || 'gs') || rt.user?.uid || ''
+                    if (uid && !cookie) {
+                        cookie = rt.user?.mysUser?.ck
+                    }
+                } catch (err) {
+                    logger.error(`[xiaoyao-cvs-plugin] getCookie 获取uid失败：${err}`)
+                }
+            }
         }
         this.e.uid = uid;
         this.e.cookie = cookie;

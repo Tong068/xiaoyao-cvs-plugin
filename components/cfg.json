@@ -2,5 +2,8 @@
 	"sys": {
 		"help": false,
 		"Note": false
+	},
+	"ck": {
+		"sk": true
 	}
 }

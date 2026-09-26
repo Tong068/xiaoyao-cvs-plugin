@@ -187,9 +187,23 @@ async function getAuthKey(e, user,data={
 	auth_appid:'webview_gacha'
 }) {
 	if (!e.uid) {
-		e.uid = e?.runtime?.user?._regUid
+		// JiuLi 运行时没有 _regUid，uid 需从 runtime.user.getUid(game) 获取
+		try {
+			const Runtime = (await import('../../../lib/core/runtime.js')).default
+			const runtime = e.runtime ?? Runtime.attach(e)
+			await runtime.ready() // 确保 e.user 已初始化
+			e.uid = runtime.user?.getUid?.(e.game || 'gs') || runtime.user?.uid || ''
+		} catch (err) {
+			logger.error(`[xiaoyao-cvs-plugin] 获取uid失败：${err}`)
+		}
 	}
-	e.region = getServer(e.uid)
+	if (!e.uid) {
+		e.reply('未获取到UID，请先发送 #绑定uid 或 刷新ck 后再试。')
+		return false;
+	}
+	if (!e.region) {
+		e.region = getServer(e.uid)
+	}
 	let authkeyrow = await user.getData("authKey", data);
 	if (!authkeyrow?.data) {
 		e.reply(`uid:${e.uid},authkey获取失败：` + (authkeyrow.message.includes("登录失效") ? "请重新绑定stoken" : authkeyrow.message))
